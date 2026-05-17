@@ -104,302 +104,41 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="DESERTER" startnode="32" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="2553230A-20A0-4CFB-8B1C-C9D1F412BFCF" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-
-html, body {
-  background-color: #000000;
-  cursor: none;
-  color: #5dc760;
-  font-family: 'VT323', monospace;
-  font-size: 2.5vmin;
-  line-height: 0em;
-  letter-spacing: 0.08em;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-shadow:
-    0 0 1px #5dc760;
-}
-
-p {
-  margin: 0;
-  padding: 0;
-}
-
-br {
-  display: none;
-}
-
-tw-story, #passages {
-  width: 80vmin;
-  height: 80vmin;
-  margin: 0;
-  padding: 3vmin 2vmin;
-  box-sizing: border-box;
-  overflow: hidden;
-  border: 1px solid black; /* temporary, remove when done */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-
-.passage {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  filter: brightness(1.2) contrast(1.2);
-}
-
-.choices {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-left: 4vmin;
-  margin-top: 1em;
-}
-
-.bottom-bar {
-  min-height: 1.2em;
-  margin-top: auto;
-  line-height: 1.2em;
-}
-
-.title-screen {
-  text-align: center;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.spacer {
-  height: 1em;
-}
-
-a, tw-link {
-  color: #969696;
-  text-decoration: none;
-}
-
-a:hover {
-  color: #ffffff;
-  text-decoration: underline;
-}
-
-.title-screen {
-  text-align: center;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.highlight {
-  color: #98fca5;
-  font-style: normal;
-  font-weight: normal;
-}
-
-.spacer {
-  height: 1em;
-}
-
-.choice-display {
-  display: inline-block;
-  min-width: 1ch;
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-* {
-  user-select: none;
-}
-
-tw-debugger {
-	display: none;
-}</style><script role="script" id="twine-user-script" type="text/twine-javascript">// remove UI on the left
-UIBar.destroy();
-// disable save on refresh
-Config.saves.autosave = false;
-$(document).one(':storyready', function() {
-  Engine.play('Init');
-});
-// audio context
-var audioContext = null;
-function getAudioContext() {
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioContext.state === 'suspended') {
-    audioContext.resume();
-  }
-  return audioContext;
-}
-
-// typing sound
-function playTypeSound() {
-  var context = getAudioContext();
-  var oscillator = context.createOscillator();
-  var gain = context.createGain();
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(300, context.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(150, context.currentTime + 0.08);
-  gain.gain.setValueAtTime(0.07, context.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.08);
-  oscillator.start(context.currentTime);
-  oscillator.stop(context.currentTime + 0.08);
-}
-// unlock audio and start on any key
-$(document).one('keyup', function() {
-  getAudioContext();
-  Engine.play('Title Screen');
-});
-// typing effect
-var typingTimeout = null;
-var currentContent = null;
-var currentOriginal = '';
-$(document).on(':passagerender', function(ev) {
-  currentContent = $(ev.content);
-  currentOriginal = currentContent.html();
-  if (typingTimeout) {
-    clearTimeout(typingTimeout);
-    typingTimeout = null;
-  }
-  
-  State.setVar('$typingDone', false);
-  var content = $(ev.content);
-  var original = content.html();
-  var visible = 0;
-  var textOnly = original.replace(/<nottyped>.*?<\/nottyped>/gs, '').replace(/<[^>]*>/g, '');
-  var totalChars = textOnly.length;
-  var bottomBarLength = $(ev.content).find('.bottom-bar').text().length;
-  var bottomBarStart = totalChars - bottomBarLength;
-  var bottomBarDelayDone = false;
-
-  function getDelay(char, pos) {
-    if (!bottomBarDelayDone && pos >= bottomBarStart) {
-      bottomBarDelayDone = true;
-      return 800;
-    }
-    if (char === ' ' || char === ',') return 40;
-    if (char === '.') return 75;
-    return 10;
-  }
-  function typeNext() {
-    if (visible >= totalChars) {
-      State.setVar('$typingDone', true);
-      return;
-    }
-    visible++;
-    var chars = 0;
-    var currentChar = '';
-    var result = original.replace(/(<nottyped>.*?<\/nottyped>)|(<[^>]*>)|(.)/gs, function(match, nottyped, tag, char) {
-      if (nottyped) return nottyped;
-      if (tag) return tag;
-      if (chars < visible) {
-        chars++;
-        if (chars === visible) currentChar = char;
-        return char;
-      }
-      return '';
-    });
-    content.html(result);
-    if (currentChar !== ' ' && currentChar !== '\n') {
-      playTypeSound();
-    }
-    typingTimeout = setTimeout(typeNext, getDelay(currentChar, visible));
-  }
-  typeNext();
-});
-
-// multiple choice with numbers
-$(document).on('keypress', function(e) {
-  if (passage() === 'Init') return;
-  if (!State.getVar('$typingDone')) return;
-  var map = State.getVar('$choiceMap');
-  if (!map) return;
-  var key = e.key;
-  if (key === 'Enter') {
-    var current = State.getVar('$currentChoice');
-    if (current && map[current]) {
-      Engine.play(map[current]);
-    }
-  } else if (map[key]) {
-    State.setVar('$currentChoice', key);
-    $('.choice-display').text(key);
-    $('.choice-display').css('animation', 'none');
-  }
-});
-// backspace and enter to continue
-$(document).on('keydown', function(e) {
-  if (passage() === 'Init') return;
-
-  //SPACE = finish typing instantly
-  if (e.code === 'Space') {
-    if (!State.getVar('$typingDone') && currentContent) {
-      e.preventDefault();
-
-      clearTimeout(typingTimeout);
-      typingTimeout = null;
-
-      currentContent.html(currentOriginal);
-      State.setVar('$typingDone', true);
-    }
-    return; // stop here so it doesn't trigger other logic
-  }
-
-  // block other input until typing is done
-  if (!State.getVar('$typingDone')) return;
-
-  if (e.key === 'Backspace') {
-    State.setVar('$currentChoice', '');
-    $('.choice-display').text('_');
-    $('.choice-display').css('animation', '');
-  }
-
-  if (e.key === 'Enter') {
-    var next = State.getVar('$nextPassage');
-    if (next) {
-      Engine.play(next);
-    }
-  }
-});</script><tw-tag name="Template" color="red"></tw-tag><tw-tag name="TEXT" color="blue"></tw-tag><tw-tag name="CHOICE" color="yellow"></tw-tag><tw-tag name="INTERMEZZO" color="green"></tw-tag><tw-passagedata pid="1" name="9754 - 1" tags="CHOICE" position="700,300" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+	<tw-storydata name="DESERTER" startnode="76" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="2553230A-20A0-4CFB-8B1C-C9D1F412BFCF" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+html,body{background:#000;cursor:none;color:#5dc760;font-family:'VT323',monospace;font-size:2.5vmin;line-height:0;letter-spacing:.08em;margin:0;padding:0;overflow:hidden;height:100%;display:flex;align-items:center;justify-content:center;text-shadow:0 0 1px #5dc760}
+p{margin:0;padding:0}
+br{display:none}
+tw-story,#passages{width:80vmin;height:80vmin;margin:0;padding:3vmin 2vmin;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+.passage{margin:0;padding:0;width:100%;height:100%;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;filter:brightness(1.2) contrast(1.2)}
+.choices{display:flex;flex-direction:column;gap:0;padding-left:4vmin;margin-top:1em}
+.bottom-bar{min-height:1.2em;margin-top:auto;line-height:1.2em}
+.title-screen{text-align:center;width:100%;height:100%;display:flex;flex-direction:column;justify-content:space-between;align-items:center}
+.title-content{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.spacer{height:1em}
+a,tw-link{color:#969696;text-decoration:none}
+a:hover{color:#fff;text-decoration:underline}
+.highlight{color:#98fca5;font-style:normal;font-weight:normal}
+.choice-display{display:inline-block;min-width:1ch;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+*{user-select:none}
+tw-debugger{display:none}</style><script role="script" id="twine-user-script" type="text/twine-javascript">UIBar.destroy();Config.saves.autosave=false;$(document).one(':storyready',()=>Engine.play('Init'));
+var aC=null;
+function gAC(){if(!aC)aC=new(window.AudioContext||window.webkitAudioContext)();if(aC.state==='suspended')aC.resume();return aC;}
+function pTS(){var c=gAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(300,c.currentTime);o.frequency.exponentialRampToValueAtTime(150,c.currentTime+.08);g.gain.setValueAtTime(.07,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.08);o.start(c.currentTime);o.stop(c.currentTime+.08);}
+$(document).one('keyup',()=>{gAC();Engine.play('Title Screen');});
+var tT=null,cC=null,cO='';
+$(document).on(':passagerender',function(ev){cC=$(ev.content);cO=cC.html();if(tT){clearTimeout(tT);tT=null;}State.setVar('$typingDone',false);var ct=$(ev.content),or=ct.html(),vi=0,tx=or.replace(/<nottyped>.*?<\/nottyped>/gs,'').replace(/<[^>]*>/g,''),tot=tx.length,bbl=$(ev.content).find('.bottom-bar').text().length,bbs=tot-bbl,bbd=false;
+function gD(ch,p){if(!bbd&&p>=bbs){bbd=true;return 800;}if(ch===' '||ch===',')return 40;if(ch==='.')return 75;return 10;}
+function tN(){if(vi>=tot){State.setVar('$typingDone',true);return;}vi++;var ch=0,cc='',r=or.replace(/(<nottyped>.*?<\/nottyped>)|(<[^>]*>)|(.)/gs,function(m,n,t,c){if(n)return n;if(t)return t;if(ch<vi){ch++;if(ch===vi)cc=c;return c;}return '';});ct.html(r);if(cc!==' '&&cc!=='\n')pTS();tT=setTimeout(tN,gD(cc,vi));}tN();});
+$(document).on('keypress',function(e){if(passage()==='Init')return;if(!State.getVar('$typingDone'))return;var m=State.getVar('$choiceMap');if(!m)return;var k=e.key;if(k==='Enter'){var cur=State.getVar('$currentChoice');if(cur&&m[cur])Engine.play(m[cur]);}else if(m[k]){State.setVar('$currentChoice',k);$('.choice-display').text(k).css('animation','none');}});
+$(document).on('keydown',function(e){if(passage()==='Init')return;if(e.code==='Space'){if(!State.getVar('$typingDone')&&cC){e.preventDefault();clearTimeout(tT);tT=null;cC.html(cO);State.setVar('$typingDone',true);}return;}if(!State.getVar('$typingDone'))return;if(e.key==='Backspace'){State.setVar('$currentChoice','');$('.choice-display').text('_').css('animation','');}if(e.key==='Enter'){var nx=State.getVar('$nextPassage');if(nx)Engine.play(nx);}});</script><tw-tag name="Template" color="red"></tw-tag><tw-tag name="TEXT" color="blue"></tw-tag><tw-tag name="INTERMEZZO" color="green"></tw-tag><tw-tag name="CHOICE" color="yellow"></tw-tag><tw-passagedata pid="1" name="9754 - 1" tags="CHOICE" position="700,300" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {
   &quot;1&quot;: &quot;9754 - 1a&quot;,
   &quot;2&quot;: &quot;9754 - 1b&quot;,
   &quot;3&quot;: &quot;9754 - 1c&quot;,
-  &quot;4&quot;: &quot;9754 - 1d&quot;
+  &quot;4&quot;: &quot;9754 - 1d&quot;,
+  &quot;9&quot;: &quot;9756 - Intro&quot;
 }&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
@@ -422,9 +161,9 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner tells you that his mother &lt;span class=&quot;highlight&quot;&gt;Catharina&lt;/span&gt; died of illness when he was barely four years of age. This seems to have greatly affected him and his family.&lt;/p&gt;
+  &lt;p&gt;The prisoner tells you that his mother Catharina died of illness when he was barely four years of age. This seems to have greatly affected him and his family.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;His father &lt;span class=&quot;highlight&quot;&gt;Pierre&lt;/span&gt; was a farmer and a brave man who took his duties seriously. The family attended church regularly, and he provided for his son to remain in school until the age of twelve, when he started to help on the fields.&lt;/p&gt;
+  &lt;p&gt;His father Pierre was a farmer and a brave man who took his duties seriously. The family attended church regularly, and he provided for his son to remain in school until the age of twelve, when he started to help on the fields.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;The character of his father was strict but caring, forbidding his son to stay out late and take unnecessary risks. He is described as a good, respected and loved. During conscription, the prisoner recalls being glad to visit him whenever possible.&lt;/p&gt;
 &lt;/div&gt;
@@ -435,9 +174,9 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner tells you that he was born as the only son to a happy family of six in the lovely village of &lt;span class=&quot;highlight&quot;&gt;Onze-Lieve-Vrouw-Waver&lt;/span&gt;. He was raised to be a farm labourer, like his parents.&lt;/p&gt;
+  &lt;p&gt;The prisoner tells you that he was born as the only son to a happy family of six in the lovely village of Onze-Lieve-Vrouw-Waver. He was raised to be a farm labourer, like his parents.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;His mother &lt;span class=&quot;highlight&quot;&gt;Catharina&lt;/span&gt; died of illness when he was barely four years of age. This seems to have greatly affected him and his family. Nonetheless, his father was a great man who took his duties seriously, and provided for his son to remain in school until the age of twelve.&lt;/p&gt;
+  &lt;p&gt;His mother Catharina died of illness when he was barely four years of age. This seems to have greatly affected him and his family. Nonetheless, his father was a great man who took his duties seriously, and provided for his son to remain in school until the age of twelve.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;From then on, he started to work on the fields with his father. After the age of eighteen, he was allowed to attend local fairs, where he formed some close friendships. He also briefly mentions having a fiancee, but you notice he doesn&#39;t intend to talk about this.&lt;/p&gt;
 &lt;/div&gt;
@@ -448,13 +187,13 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner tells you that he went to school until the age of twelve thanks to his father, who courageously supported his family of four children after the death of their mother. There, he quickly developed his intellect under the guidance of a Sister in kindergarten, followed by schoolmaster &lt;span class=&quot;highlight&quot;&gt;Schoeters&lt;/span&gt; and, after his death, schoolmaster &lt;span class=&quot;highlight&quot;&gt;Aarts&lt;/span&gt;.&lt;/p&gt;
+  &lt;p&gt;The prisoner tells you that he went to school until the age of twelve thanks to his father, who courageously supported his family of four children after the death of their mother. There, he quickly developed his intellect under the guidance of a Sister in kindergarten, followed by schoolmaster Schoeters and, after his death, schoolmaster Aarts.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;After completing his primary education, the prisoner began assisting his father in the fields. From the age of eighteen, he was able to set aside part of his earnings to visit local fairs, where he formed close friendships. He also briefly mentions having a fiancee, but you notice he doesn&#39;t intend to talk about this.&lt;/p&gt;
+  &lt;p&gt;After completing his primary education, the prisoner began assisting his father in the fields. From the age of eighteen, he was able to set aside part of his earnings to visit local fairs, where he formed close friendships. He also briefly mentions having a fiancee, but you notice he does not intend to talk about this.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
   Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="5" name="9754 - 1d" tags="CHOICE TEXT" position="900,700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="5" name="9754 - 1d" tags="CHOICE TEXT" position="900,600" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {
   &quot;1&quot;: &quot;9754 - 1a&quot;,
@@ -518,9 +257,9 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner tells you it was simply his duty. The Law of 1909 was clear: the oldest son of every household was to serve, and by 1913 that reality had fallen upon him. On the &lt;span class=&quot;highlight&quot;&gt;16th of September&lt;/span&gt;, he left to serve the Fatherland.&lt;/p&gt;
+  &lt;p&gt;The prisoner tells you it was simply his duty. The Law of 1909 was clear: the oldest son of every household was to serve, and by 1913 that reality had fallen upon him. On the 16th of September, he left to serve the Fatherland.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;As the prisoner recounts his first days at the barracks of the &lt;span class=&quot;highlight&quot;&gt;5th Regiment of the Line&lt;/span&gt; in &lt;span class=&quot;highlight&quot;&gt;Antwerp&lt;/span&gt;, you notice the departure from his family caused both pride and sorrow. At the train station his father had given him one final embrace and a piece of advice: to behave well and do his duty. Upon arriving at the barracks and receiving his military uniform his mind remained at home with his father and sisters.&lt;/p&gt;
+  &lt;p&gt;As the prisoner recounts his first days at the barracks of the 5th Regiment of the Line in Antwerp, you notice the departure from his family caused both pride and sorrow. At the train station his father had given him one final embrace and a piece of advice: to behave well and do his duty. Upon arriving at the barracks and receiving his military uniform his mind remained at home with his father and sisters.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;He tells you that the War came as a surprise. So, while he had no intention to play in a war, to march and fight became now his duty.&lt;/p&gt;
 &lt;/div&gt;
@@ -531,9 +270,9 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner looks at you with mild indignation. He tells you that it was the Law of 1909 that required him to serve his Fatherland, which he did dutifully starting on the &lt;span class=&quot;highlight&quot;&gt;16th of September 1913&lt;/span&gt;.&lt;/p&gt;
+  &lt;p&gt;The prisoner looks at you with mild indignation. He tells you that it was the Law of 1909 that required him to serve his Fatherland, which he did dutifully starting on the 16th of September 1913.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;While he tells you that he dreaded the distance from his father and sisters, he applied himself without complaint, learned his duties, and obeyed his commanders without question. On the &lt;span class=&quot;highlight&quot;&gt;3rd of August 1914&lt;/span&gt;, the eve of the War, his record in the barracks of the &lt;span class=&quot;highlight&quot;&gt;5th Regiment of the Line&lt;/span&gt; in &lt;span class=&quot;highlight&quot;&gt;Antwerp&lt;/span&gt; was spotless.&lt;/p&gt;
+  &lt;p&gt;While he tells you that he dreaded the distance from his father and sisters, he applied himself without complaint, learned his duties, and obeyed his commanders without question. On the 3rd of August 1914, the eve of the War, his record in the barracks of the 5th Regiment of the Line in Antwerp was spotless.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
   Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
@@ -542,9 +281,9 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner tells you that on August 3rd 1914 he remained with the &lt;span class=&quot;highlight&quot;&gt;5th Regiment of the Line&lt;/span&gt; in &lt;span class=&quot;highlight&quot;&gt;Antwerp&lt;/span&gt;, where he was fulfilling his military service as dictated by the Law of 1909.&lt;/p&gt;
+  &lt;p&gt;The prisoner tells you that on August 3rd 1914 he remained with the 5th Regiment of the Line in Antwerp, where he was fulfilling his military service as dictated by the Law of 1909.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;When the Germans declared war, his regiment was ordered to march toward &lt;span class=&quot;highlight&quot;&gt;Mechelen&lt;/span&gt;, then toward &lt;span class=&quot;highlight&quot;&gt;Leuven&lt;/span&gt; and &lt;span class=&quot;highlight&quot;&gt;Tienen&lt;/span&gt;, until they found themselves near &lt;span class=&quot;highlight&quot;&gt;Aarschot&lt;/span&gt;, where their scouts first encountered the German forces.&lt;/p&gt;
+  &lt;p&gt;When the Germans declared war, his regiment was ordered to march toward Mechelen, then toward Leuven and Tienen, until they found themselves near Aarschot, where their scouts first encountered the German forces.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;During the first weeks of the War, he remembers a great deal of marching and little clarity. Orders came and went, and the men followed them without always understanding where they were headed or why.&lt;/p&gt;
 &lt;/div&gt;
@@ -599,11 +338,11 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner speaks with a note of pride, explaining that it was near &lt;span class=&quot;highlight&quot;&gt;Aarschot&lt;/span&gt; that they first met the Germans, after the long marches that had already left his feet in pain.&lt;/p&gt;
+  &lt;p&gt;The prisoner speaks with a note of pride, explaining that it was near Aarschot that they first met the Germans, after the long marches that had already left his feet in pain.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;He recounts how they fought near &lt;span class=&quot;highlight&quot;&gt;Boortmeerbeek&lt;/span&gt; and advanced toward &lt;span class=&quot;highlight&quot;&gt;Leuven&lt;/span&gt;, even temporarily driving the enemy back. Yet, repeated orders and the overwhelming force of the Enemy advance compelled them to retreat. The first battle brought some wounded, but the second was far bloodier.&lt;/p&gt;
+  &lt;p&gt;He recounts how they fought near Boortmeerbeek and advanced toward Leuven, even temporarily driving the enemy back. Yet, repeated orders and the overwhelming force of the Enemy advance compelled them to retreat. The first battle brought some wounded, but the second was far bloodier.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;After a final, lesser fight near &lt;span class=&quot;highlight&quot;&gt;Mechelen&lt;/span&gt;, they withdrew into &lt;span class=&quot;highlight&quot;&gt;Antwerp&lt;/span&gt;, only to be sent away again. Under fire by German artillery and forced to go on foot, they had little choice but to retreat along the border with &lt;span class=&quot;highlight&quot;&gt;Holland&lt;/span&gt; up to the &lt;span class=&quot;highlight&quot;&gt;Yser&lt;/span&gt;.&lt;/p&gt;
+  &lt;p&gt;After a final, lesser fight near Mechelen, they withdrew into Antwerp, only to be sent away again. Under fire by German artillery and forced to go on foot, they had little choice but to retreat along the border with Holland up to the Yser.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
   Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
@@ -612,9 +351,9 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner speaks with a note of pride, explaining that it was near &lt;span class=&quot;highlight&quot;&gt;Aarschot&lt;/span&gt; that they first met the Germans, after the long marches that had already left his feet in pain. Their scouts had simply returned with word of German forces nearby, though the consequences were not serious at first.&lt;/p&gt;
+  &lt;p&gt;The prisoner speaks with a note of pride, explaining that it was near Aarschot that they first met the Germans, after the long marches that had already left his feet in pain. Their scouts had simply returned with word of German forces nearby, though the consequences were not serious at first.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;What followed near &lt;span class=&quot;highlight&quot;&gt;Leuven&lt;/span&gt; was different. There, he gained his first real combat experience driving the enemy back for a time, before retreating under overwhelming fire. The first battle had brought some wounded, but the second was far bloodier. He remembers seeing men fall, hearing them cry out for their mothers, and he too, sometimes found his thoughts drifting to his late mother.&lt;/p&gt;
+  &lt;p&gt;What followed near Leuven was different. There, he gained his first real combat experience driving the enemy back for a time, before retreating under overwhelming fire. The first battle had brought some wounded, but the second was far bloodier. He remembers seeing men fall, hearing them cry out for their mothers, and he too, sometimes found his thoughts drifting to his late mother.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;He was a good soldier, and he did what he had to.&lt;/p&gt;
 &lt;/div&gt;
@@ -625,9 +364,9 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner&#39;s expression softens slightly. He mentions his first Commander, a man they called &lt;span class=&quot;highlight&quot;&gt;Jadmain&lt;/span&gt;, who granted him his first leave after just fourteen days. He used this time to visit his father and sisters.&lt;/p&gt;
+  &lt;p&gt;The prisoner&#39;s expression softens slightly. He mentions his first Commander, a man they called Jadmain, who granted him his first leave after just fourteen days. He used this time to visit his father and sisters.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;It is Lieutenant &lt;span class=&quot;highlight&quot;&gt;Vincent&lt;/span&gt; the prisoner speaks of with the most reverence. He describes him as his Commander during the bloodiest engagements, a man who ultimately gave his life for the Fatherland.&lt;/p&gt;
+  &lt;p&gt;It is Lieutenant Vincent the prisoner speaks of with the most reverence. He describes him as his Commander during the bloodiest engagements, a man who ultimately gave his life for the Fatherland.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;It is clear that the prisoner had the utmost respect for his superiors.&lt;/p&gt;
 &lt;/div&gt;
@@ -638,11 +377,11 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner speaks with a note of pride, explaining that it was near &lt;span class=&quot;highlight&quot;&gt;Aarschot&lt;/span&gt; that they first met the Germans, after the long marches that had already left his feet in pain.&lt;/p&gt;
+  &lt;p&gt;The prisoner speaks with a note of pride, explaining that it was near Aarschot that they first met the Germans, after the long marches that had already left his feet in pain.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;He recounts how they fought near &lt;span class=&quot;highlight&quot;&gt;Boortmeerbeek&lt;/span&gt; and advanced toward &lt;span class=&quot;highlight&quot;&gt;Leuven&lt;/span&gt;, even temporarily driving the enemy back. Yet, repeated orders and the overwhelming force of the Enemy advance compelled them to retreat. The first battle brought some wounded, but the second was far bloodier.&lt;/p&gt;
+  &lt;p&gt;He recounts how they fought near Boortmeerbeek and advanced toward Leuven, even temporarily driving the enemy back. Yet, repeated orders and the overwhelming force of the Enemy advance compelled them to retreat. The first battle brought some wounded, but the second was far bloodier.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;After a final, lesser fight near &lt;span class=&quot;highlight&quot;&gt;Mechelen&lt;/span&gt;, they withdrew into &lt;span class=&quot;highlight&quot;&gt;Antwerp&lt;/span&gt;, only to be sent away again. Under fire by German artillery and forced to go on foot, they had little choice but to retreat along the border with &lt;span class=&quot;highlight&quot;&gt;Holland&lt;/span&gt; up to the Yser.&lt;/p&gt;
+  &lt;p&gt;After a final, lesser fight near Mechelen, they withdrew into Antwerp, only to be sent away again. Under fire by German artillery and forced to go on foot, they had little choice but to retreat along the border with Holland up to the Yser.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
   Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
@@ -653,9 +392,9 @@ $(document).on('keydown', function(e) {
 &lt;div class=&quot;passage-body&quot;&gt;
   &lt;p&gt;The prisoner pauses, choosing his answer carefully.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;He says that loneliness was never something one could truly overcome in the War. He recalls his comrades who had marched with him from the beginning in the barracks at &lt;span class=&quot;highlight&quot;&gt;Antwerp&lt;/span&gt;.&lt;/p&gt;
+  &lt;p&gt;He says that loneliness was never something one could truly overcome in the War. He recalls his comrades who had marched with him from the beginning in the barracks at Antwerp.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;Of these 79 men, 15 remained. Most of them are dead or wounded, although some of them disappeared over the border. He will always remember the boys crying for their mothers in the battle for &lt;span class=&quot;highlight&quot;&gt;Leuven&lt;/span&gt;, and he too, sometimes found his thoughts drifting to his late mother.&lt;/p&gt;
+  &lt;p&gt;Of these 79 men, 15 remained. Most of them are dead or wounded, although some of them disappeared over the border. He will always remember the boys crying for their mothers in the battle for Leuven, and he too, sometimes found his thoughts drifting to his late mother.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;He glances around the small cell, and you wonder whether the silence of this place feels any different.&lt;/p&gt;
 &lt;/div&gt;
@@ -724,7 +463,7 @@ $(document).on('keydown', function(e) {
 }&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner pauses, as if counting the years in his head. From their arrival at the Yser in the fall of 1914 until the &lt;span class=&quot;highlight&quot;&gt;10th of June 1918&lt;/span&gt;.&lt;/p&gt;
+  &lt;p&gt;The prisoner pauses, as if counting the years in his head. From their arrival at the Yser in the fall of 1914 until the 10th of June 1918.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;There, he tells you, he had witnessed all the bloodiest of battles. You notice he does not have much to say about this topic, yet, so you ask another question:&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
@@ -743,7 +482,7 @@ $(document).on('keydown', function(e) {
 }&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;The prisoner looks at you as if the question has no satisfying answer. He mentions Lieutenant &lt;span class=&quot;highlight&quot;&gt;Vincent&lt;/span&gt;, whom he describes as the finest Commander he ever served under, a man who ultimately gave his life for the Fatherland.&lt;/p&gt;
+  &lt;p&gt;The prisoner looks at you as if the question has no satisfying answer. He mentions Lieutenant Vincent, whom he describes as the finest Commander he ever served under, a man who ultimately gave his life for the Fatherland.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;You are not sure what to make of this answer, so you ask another question:&lt;/p&gt;
   &lt;div class=&quot;choices&quot;&gt;
@@ -758,7 +497,7 @@ $(document).on('keydown', function(e) {
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;He tells you that on the night of the &lt;span class=&quot;highlight&quot;&gt;10th of June 1918&lt;/span&gt;, he and some others were commanded to occupy an outpost.&lt;/p&gt;
+  &lt;p&gt;He tells you that on the night of the 10th of June 1918, he and some others were commanded to occupy an outpost.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;It was them who had resolved to go to the Enemy. Because of their convincing language, the prisoner tells you he foolishly agreed. Together with a corporal and six soldiers, they were taken prisoner by the Germans.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
@@ -773,7 +512,7 @@ $(document).on('keydown', function(e) {
 &lt;div class=&quot;passage-body&quot;&gt;
   &lt;p&gt;The prisoner stiffens. He reminds you that from the very first day he served without a single punishment, and that he held his position at the Yser for nearly four years. He was not that kind of man.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;On the night of the &lt;span class=&quot;highlight&quot;&gt;10th of June 1918&lt;/span&gt;, it were his comrades who had resolved to go to the Enemy. Because of their convincing language, the prisoner tells you he foolishly agreed.&lt;/p&gt;
+  &lt;p&gt;On the night of the 10th of June 1918, it were his comrades who had resolved to go to the Enemy. Because of their convincing language, the prisoner tells you he foolishly agreed.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;He holds your gaze as he says it. The initiative, he repeats, was not his. Yet, he also seems to ask for understanding, something that is not yours to give.&lt;/p&gt;
 &lt;/div&gt;
@@ -858,7 +597,7 @@ $(document).on('keydown', function(e) {
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
   Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="30" name="9754 - Quote" tags="" position="2900,300" size="100,100">&lt;&lt;set $nextPassage = &quot;Intermezzo - 1&quot;&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="30" name="9754 - Quote" tags="" position="2900,300" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - Intro&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {}&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
@@ -873,13 +612,691 @@ $(document).on('keydown', function(e) {
   &lt;p style=&quot;color: white;&quot;&gt;&quot;Jongens zag ik vallen met het woord dat zij nog slecht konnen uitspreken Moeder op hun lippen. Intusschen dacht ik dan ook aan mijne dierbare die ik dan op den ouderdom van 4 jaar verlooren had.&quot;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
-  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="31" name="Disclaimer" tags="" position="500,100" size="100,100">&lt;&lt;set $nextPassage = &quot;Intro - 1&quot;&gt;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to start the next interview...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="31" name="9756 - 1" tags="CHOICE" position="700,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9756 - 1a&quot;,
+  &quot;2&quot;: &quot;9756 - 1b&quot;,
+  &quot;3&quot;: &quot;9756 - 1c&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;You enter Cell &lt;span class=&quot;highlight&quot;&gt;152&lt;/span&gt;. The prisoner looks up briefly and greets you, but does not seem eager to engage in conversation.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When you explain that you would like to hear his side of things, he nods once. You notice that he served alongside prisoner Verbruggen, and that he deserted on the same night.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You choose your first question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - What did your life look like before the War?&lt;/p&gt;
+    &lt;p&gt;2 - Why are you here?&lt;/p&gt;
+    &lt;p&gt;3 - Do you know Gustave Verbruggen?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="32" name="9756 - 1a" tags="TEXT" position="900,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - 2&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {}&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;This game is inspired the true stories of prisoners held at the Central Penitentiary of Leuven after the First World War.&lt;/p&gt;
+  &lt;p&gt;The prisoner shrugs his shoulders indifferently.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He tells you he was born and raised in Nieuwrode. There, he went to the public school and became a farmer. On the 7th of August 1914, he joined the Army voluntarily.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When you ask him to elaborate further, he insists that there is nothing left worth saying.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="33" name="9756 - 1b" tags="TEXT" position="900,1200" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner looks at you flatly. He tells you he deserted to the enemy on the 14th of June 1918, and that is why he is here, in this prison.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;His comrades convinced him, he says, at a moment of pain and weakness. He did really know what he was doing, but accepts his responsibility.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He does not seem interested in elaborating, and the conversation already comes to an end before it has truly begun.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="34" name="9756 - 1c" tags="TEXT" position="900,1300" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - 2&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner jumps up. He says he knows the name. They served in the same regiment, and crossed together with five others to the German lines.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Beyond that, he does not seem to have much to say about Mr. Verbruggen. You get the impression that they were not that close.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="35" name="9756 - 2" tags="CHOICE" position="1100,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9756 - 2a&quot;,
+  &quot;2&quot;: &quot;9756 - 2b&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you he would rather get on with his day than dwell on the past.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;At your insistence, he agrees to answer one other question.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You choose your second and final question carefully:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - What happened on the night of the 14th of June 1918?&lt;/p&gt;
+    &lt;p&gt;2 - Why did you decide to cross to the Enemy?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="36" name="9756 - 2a" tags="TEXT" position="1300,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner explains he and some others crossed to the Enemy. His comrades had asked him to come, and he agreed because he had just received a disciplinary measure prohibiting him from going on leave for the next six months.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;As to why he had been punished in the Army, he does not say.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="37" name="9756 - 2b" tags="TEXT" position="1300,1200" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner takes a moment to think. He had never decided to cross on his own, but instead joined his comrades who asked him to come with them.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He only agreed because he had just received a disciplinary measure prohibiting him from going on leave for the next six months. It caused him a lot of pain and sickness at the Yser, which is why he could not think clearly and made his mistake.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;This, he states, is why he is in prison.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="38" name="9756 - Intro" tags="TEXT" position="500,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - 1&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;title-screen&quot;&gt;
+  &lt;div class=&quot;title-content&quot;&gt;
+    &lt;p&gt;PRISONER 9756&lt;/p&gt;
+    &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+    &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+    &lt;p&gt;NAME: &lt;span class=&quot;highlight&quot;&gt;Janssens, Evariste&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;BORN: &lt;span class=&quot;highlight&quot;&gt;1892-05-12 (aged 27)&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;UNIT: &lt;span class=&quot;highlight&quot;&gt;15th Regiment of the Line&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;CAUSE OF DETENTION: &lt;span class=&quot;highlight&quot;&gt;desertion to the enemy&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;DATE OF OFFENSE: &lt;span class=&quot;highlight&quot;&gt;1918-06-14&lt;/span&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="39" name="9756 - Outro" tags="TEXT" position="1500,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;9756 - Quote&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;It is clear you will not get much more information from Mr. Janssens at this moment. Nonetheless, you thank him for his time.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;As you leave Cell &lt;span class=&quot;highlight&quot;&gt;152&lt;/span&gt;, you think about how his account echoes that of prisoner Verbruggen.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="40" name="9756 - Quote" tags="" position="1700,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;Intermezzo - 1&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p style=&quot;color: white;&quot;&gt;&quot;Door eene ziekte dat ik die straf heb gehad waar ik veel pijn heb mede door staan achter den ijzer, en die straf in den kop gestoken en niet geweten wat ik deedt en bij den vijand gegaan, daar mede zit ik hier in het gevang.&quot;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="41" name="9843 - 1" tags="CHOICE" position="700,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 1a&quot;,
+  &quot;2&quot;: &quot;9843 - 1b&quot;,
+  &quot;3&quot;: &quot;9843 - 1c&quot;,
+  &quot;4&quot;: &quot;9843 - 1d&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;You enter Cell &lt;span class=&quot;highlight&quot;&gt;75&lt;/span&gt;. The prisoner eyes you with a certain wariness, and, before saying anything at all, you can tell he has an astute character.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When you explain why you are here, he nods once, and decides you are worth talking to.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You prepare to ask your first question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - Where did you grow up?&lt;/p&gt;
+    &lt;p&gt;2 - What was your occupation prior to the War?&lt;/p&gt;
+    &lt;p&gt;3 - You seem like a man who always had a plan.&lt;/p&gt;
+    &lt;p&gt;4 - Tell me more about your family.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="42" name="9843 - 1a" tags="TEXT" position="900,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 2I&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;He tells you plainly: Dessel, province of Antwerp, born on the 14th of July 1892 to his parents J.B. Van Campfort and Catharina Van Gestel. He went to the local school until the age of eleven, when he joined his father to work as a farmer.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He does not seem to think there is much more to say about his childhood.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="43" name="9843 - 1b" tags="TEXT" position="900,1800" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 2II&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner gives you a longer answer than you had expected. After leaving school at the age of eleven and working with his father as a farmer until sixteen, he laboured in the sand quarries of Mol-Donk. Then, at the age of eighteen, he moved to the zinc factory of Lommel. Better pay, he says.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;At twenty-one he moved to Antwerp, where he took up work as a nurse at the Sint-Elisabeth hospital. This is where he kept working until after the War had started.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You get the impression that each move was carefully considered.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="44" name="9843 - 1c" tags="TEXT CHOICE" position="900,1900" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 1a&quot;,
+  &quot;2&quot;: &quot;9843 - 1b&quot;,
+  &quot;3&quot;: &quot;9843 - 1d&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner is not sure what to say, and thanks you reluctantly for what he thinks is a compliment.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You think of a better question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - Where were you born, and where did you grow up?&lt;/p&gt;
+    &lt;p&gt;2 - What was your occupation prior to the War?&lt;/p&gt;
+    &lt;p&gt;3 - Tell me more about your family.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="45" name="9843 - 1d" tags="TEXT" position="900,2000" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 2II&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you his father was called Jan-Baptist, his mother Catharina. He speaks of them warmly, an emotion that is otherwise absent from his manner. Since moving to Antwerp to work as a nurse in the Sint-Elisabeth hospital, he has not had the chance to return home as often as he would have liked.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He also has two brothers who fought in the War, he says, leaving it at that.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="46" name="9843 - 2I" tags="CHOICE" position="1100,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 2a&quot;,
+  &quot;2&quot;: &quot;9843 - 2b&quot;,
+  &quot;3&quot;: &quot;9843 - 2c&quot;,
+  &quot;4&quot;: &quot;9843 - 2d&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;His answer was short but forthcoming.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;The real story has not yet begun, and the prisoner knows it too.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You prepare your next question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - Where were you at the beginning of the War?&lt;/p&gt;
+    &lt;p&gt;2 - What drove you to eventually join the Army?&lt;/p&gt;
+    &lt;p&gt;3 - What was your occupation prior to and during the War?&lt;/p&gt;
+    &lt;p&gt;4 - How did your parents feel about you joining the Army?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="47" name="9843 - 2II" tags="CHOICE" position="1100,2300" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 2e&quot;,
+  &quot;2&quot;: &quot;9843 - 2f&quot;,
+  &quot;3&quot;: &quot;9843 - 2d&quot;,
+  &quot;4&quot;: &quot;9843 - 2g&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;He has answered your question carefully and without hesitation.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You decide to dig a little deeper.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Choose your next question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - How does a nurse become a soldier?&lt;/p&gt;
+    &lt;p&gt;2 - Were you ever in conflict with your superiors?&lt;/p&gt;
+    &lt;p&gt;3 - How did your parents feel about you joining the Army?&lt;/p&gt;
+    &lt;p&gt;4 - What impression did the Germans first make on you?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="48" name="9843 - 2a" tags="TEXT" position="1300,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner explains he was in Antwerp, working as a nurse at the Sint-Elisabeth hospital. When the Germans took the city at the end of 1914, he continued tending to the wounded, including those they brought in themselves.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When a patient captured by the Germans fled, he was blamed for it and it cost him his job. He was dismissed on the 11th of December 1914, and by April of the following year he had crossed the border into Holland, to join the Army. The Germans, he says, had pushed him there themselves.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="49" name="9843 - 2b" tags="TEXT" position="1300,1800" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner pauses for a moment, then tells you about an incident at the Sint-Elisabeth hospital in Antwerp, where he worked as nurse. He had been falsely accused of helping a German prisoner escape. When he gave the man crutches on the orders of the doctor, the patient seized the opportunity to flee, and the director pointed the finger at him. It cost him his job.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;After returning home in Dessel, the Germans demanded all men of conscription age come to sign the registry. The choice, as he saw it, was simple: sign and risk being put to work for the Enemy, or cross the border and fight them instead.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="50" name="9843 - 2c" tags="TEXT" position="1300,1900" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner gives you a longer answer than you had expected. After leaving school at the age of eleven and working with his father as a farmer until sixteen, he laboured in the sand quarries of Mol-Donk. Then, at the age of eighteen, he moved to the zinc factory of Lommel. Better pay, he says. At twenty-one he moved to Antwerp, where he took up work as a nurse at the Sint-Elisabeth hospital.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When the Germans occupied the city at the end of 1914, that came to an abrupt end. He returned home to Dessel for a few months, then crossed the border into Holland in April 1915 and joined the Army as a volunteer.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You get the impression that each move was carefully considered.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="51" name="9843 - 2d" tags="TEXT" position="1300,2100" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;When he decided to join the Army in 1915, the prisoner explains, his father approved immediately. His mother, however, burst into tears. With two sons already at the front, his parents had been left largely without support, and he was not blind to what his departure would mean for them financially.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Still, his mother composed herself and told him to go, if his intentions were good, and to find his brothers at the front. He kissed them goodbye, and left that same night.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You sense this weighed on him more than he lets on.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="52" name="9843 - 2e" tags="TEXT" position="1300,2300" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner explains he had been falsely accused of helping a German prisoner escape. When he gave the man crutches on the orders of the doctor, the patient seized the opportunity to flee, and the director pointed the finger at him. It cost him his job.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He went home to his parents in Dessel after that. Two of his brothers were already at the front, which had left his parents with little support and little income. Then the Germans began summoning men of conscription age to sign their registry, and he wanted no part of that. So he asked his cousin if he was willing to cross the border with him.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;As he had seen the German occuption of Antwerp, he had no illusions about what he was signing up for.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="53" name="9843 - 2f" tags="TEXT" position="1300,2400" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner straightens. He tells you that, as a rule, he was not difficult. There was one incident, though, at the Sint-Elisabeth hospital in Antwerp, that he is not proud of.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;A patient taken prisoner by the Germans had fled, and the director had accused him of complicity. He was innocent, he says, and he told the director so. Perhaps too forcefully. In his own words, he lost his temper and forgot his place, and spoke to his superior in a way that gave the man reason to dismiss him.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;This dismissal eventually lead to him joining the Army, as he did not want to be requisitioned into German service, which he considered to be cowardly. In the Army, he never had any difficulties.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="54" name="9843 - 2g" tags="TEXT" position="1300,2500" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;His first real encounter with them, the prisoner explains, was at the Sint-Elisabeth hospital, when they brought in a man with a broken leg. When he gave the man crutches on the orders of the doctor, the patient seized the opportunity to flee, and the director pointed the finger at him.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He was terrified, he admits, of falling into German hands. The thought of being handed over to them left him desperate with fear. From that moment, he says, he wanted nothing more than to make them pay for what their cowardly and cruel war had cost him.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When they later summoned all men of conscription age to come and sign their registry, the prisoner saw it as another act of cowardice. He had no intention of complying. That is why he joined the Army.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="55" name="9843 - 3" tags="CHOICE" position="1500,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 3a&quot;,
+  &quot;2&quot;: &quot;9843 - 3b&quot;,
+  &quot;3&quot;: &quot;9843 - 3c&quot;,
+  &quot;4&quot;: &quot;9843 - 3d&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner shifts in his chair. You get the impression he has been waiting for you to ask the right question.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You are not sure you have found it yet.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You choose another question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - How did you escape occupied Belgium?&lt;/p&gt;
+    &lt;p&gt;2 - Were you a well-trained soldier?&lt;/p&gt;
+    &lt;p&gt;3 - Which regiment did you serve in?&lt;/p&gt;
+    &lt;p&gt;4 - What route did you take to reach the Yser?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="56" name="9843 - 3a" tags="TEXT" position="1700,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;On the night of April 11 to 12, 1915, he recounts, he crossed the Turnhout Canal with his cousin and five others in a homemade boat, 200 meters from a German sentry. Then followed two hours through the woods of Baron de Broqueville, to within 500 meters of the border.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When he was certain the German patrol had passed, he crawled on hands and knees to the border to check. Afterward, he fetched the others. Some of them mistook the Dutch soldiers for Germans and fled back into Belgium. He brought them back,, but not without difficulty.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;They spent the rest of the night with the Dutch border guards, who received them generously and gave them food. From there, it wasn&#39;t long before they would join the Army via Rotterdam.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="57" name="9843 - 3b" tags="TEXT" position="1700,1800" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner states that he always did his job well. After escaping Belgium through the Kempen and reaching the Belgian consul in &#39;s-Hertogenbosch, he was quickly sent to receive his military training.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He spent three months training as infantry in Parigné-l&#39;Évêque until July, followed by a period at the Centre du Génie near Ardres, outside Calais. By September 1915 he was at the front, where he faithfully fulfilled his service for thirty-two months.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="58" name="9843 - 3c" tags="TEXT" position="1700,1900" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you that by September 1915, after crossing into Holland and being trained in France, he was at the front. He was assigned to the Compagnie Génie, 2nd Battalion, which he tells later became the 5th Company of the 2nd Regiment.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He served for thirty-two months in total, he adds, without a single punishment to his name. He says this last part with a quiet emphasis that makes clear that he wants you to note it down.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="59" name="9843 - 3d" tags="TEXT" position="1700,2000" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;He lists it briskly: from Dessel to the Turnhout canal, across into Holland, then to &#39;s-Hertogenbosch and Rotterdam, then Vlissingen, then Tilbury in England, where he was enlisted and examined on the spot.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;From there to Folkestone, then Dieppe, then Parigné-l&#39;Évêque for three months of infantry training. In mid-July 1915 he moved to the Centre du Génie near Ardres, outside Calais, and by the 24th of September he was at the front.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He does not linger on much details, but you get the impression that the journey was not straightforward, at one point even crawling on his hands and knees in the dark and hiding from German patrols.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="60" name="9843 - 4" tags="CHOICE" position="1900,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 4a&quot;,
+  &quot;2&quot;: &quot;9843 - 4b&quot;,
+  &quot;3&quot;: &quot;9843 - 4c&quot;,
+  &quot;4&quot;: &quot;9843 - 4d&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;Sector by sector, the prisoner accounts for his thirty-two months at the front: Loo, Steenstraeten, Diksmuide, and Ramskapelle.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;As you let him finish, you notice the light coming through his barred window has shifted since you arrived.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You prepare your next question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - What is your opinion on August Borms?&lt;/p&gt;
+    &lt;p&gt;2 - When and why did you decide to desert to the Enemy?&lt;/p&gt;
+    &lt;p&gt;3 - Were there other soldiers who deserted with you?&lt;/p&gt;
+    &lt;p&gt;4 - Did you ever make it home during the War?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="61" name="9843 - 4a" tags="TEXT" position="2100,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 5I&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner seems all too familiar with the Flemish question. He tells you that he was approached by Flemish activists in his Company, like brancardier Vital Haesaert, who told him that Flemings were being slaughtered ninety-five to one hundred, that they were treated as second-rate soldiers, so-called &#39;sales boches&#39;, that the war was not theirs to fight.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Haesaert said that he would leave as soon as he could, and that others should follow his lead. On the first of May, 1918, Haesaert and Bernard Coolen, another soldier, disappeared from the Front.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;The prisoner avoids saying anything about his opinion on the Flemish question.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="62" name="9843 - 4b" tags="TEXT" position="2100,1800" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 5I&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner is quiet for a moment. He tells you it was the 10th of May 1918. Three days earlier, some men from his company, Lodewijk Verreyt and Jozef Schots, told him everything had been arranged by Vital Haesaert, Flemish activist and previous deserter.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;While he avoids telling you his opinion on the Flemish question, he stresses how much he wanted to go home, to his parents. His mother had sent him a letter on the 25th of April, writing that she was desperate to know what had become of her sons, and that his father was sick.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;So, after being plagued by them for some time, and tired of the War, he deserted with them.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="63" name="9843 - 4c" tags="TEXT" position="2100,2300" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 5II&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner explains that on the 7th of May 1918, some men from his company, Lodewijk Verreyt and Jozef Schots, told him everything had been arranged by Vital Haesaert, Flemish activist and previous deserter.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;The Flemish activists had plagued him for a long time, saying that Flemings were being slaughtered ninety-five to one hundred, that they were treated as second-rate soldiers, so-called &#39;sales boches&#39;, that the war was not worth fighting for.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;While the prisoner always maintained that the War was not the right time to fight for the Flemish cause, being able to see his family again as promised by Haesaert, did appeal to him. So, on the 10th of May, the prisoner, Verrreyt, Schots and another soldier, Alfons Willem, deserted to the Enemy.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="64" name="9843 - 4d" tags="TEXT" position="2100,2400" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 5II&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you that seeing his parents again was the promise that ultimately convinced him. Flemish activists had assured him it could be arranged, even though the prisoner himself stresses that he never thought that fighting for the Flemish cause was appropriate during the War.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;After receiving a letter of his mother on the 25th of April 1918, in which she desperately asked about her three sons and told him his father was sick, it was hard for the prisoner to resist this promise. On the 10th of May, he, Lodewijk Verrreyt, Jozef Schots and another soldier, Alfons Willem, deserted to the Enemy.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;In the end, he was able to spend four days at home with his parents.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="65" name="9843 - 5I" tags="CHOICE" position="2300,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 5a&quot;,
+  &quot;2&quot;: &quot;9843 - 5b&quot;,
+  &quot;3&quot;: &quot;9843 - 5c&quot;,
+  &quot;4&quot;: &quot;9843 - 5d&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;You are aware that your time is running short, and so, it seems, is the prisoner&#39;s patience.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When you bring up the Flemish question again, he chooses his words carefully.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You press further with your final question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - Do you consider yourself Flemish or Belgian?&lt;/p&gt;
+    &lt;p&gt;2 - Who treated you worse: the Belgians or the Germans?&lt;/p&gt;
+    &lt;p&gt;3 - What do you think should be done with traitors?&lt;/p&gt;
+    &lt;p&gt;4 - What became of you after you crossed?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="66" name="9843 - 5II" tags="CHOICE" position="2300,2300" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9843 - 5e&quot;,
+  &quot;2&quot;: &quot;9843 - 5c&quot;,
+  &quot;3&quot;: &quot;9843 - 5d&quot;
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;You are aware that your time is running short, and so, it seems, is the prisoner&#39;s patience.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;One part of his life remains undiscussed.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You ask your final question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - How did your parents react to your desertion?&lt;/p&gt;
+    &lt;p&gt;2 - What do you think should be done with traitors?&lt;/p&gt;
+    &lt;p&gt;3 - What became of you after you crossed?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="67" name="9843 - 5a" tags="TEXT" position="2500,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;He looks at you as if the question itself is problematic. He does not refute his association with Flemish activists, but tells you he is both Flemish and Belgian. He fought for Belgium as a volunteer, reached the Yser at the risk of his life, and served thirty-two months at the front.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When Haesaert told him that Flemings were being slaughtered and should not fight against the Germans, he told him plainly that the War was not the moment to settle that score. He was called too stupid to understand, while having otherwise always shown himself as a true Fleming.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Even after his desertion, he the prisoner tells you, he refused himself to commit himself to the Flemish cause with the other deserters. Nonetheless, now, after turning himself in with the Army after the War, he pays the price.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="68" name="9843 - 5b" tags="TEXT" position="2500,1800" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;He looks at you as if the question deserves more nuance than it allows. He crossed occupied territory at the risk of his life to fight for Belgium, and served thirty-two months at the front without complaint. The incident at the hospital was an injustice, he says, but only that of the director.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;The Germans, on the other hand, declared a cowardly and cruel war that cost him everything, promised him reward for his desertion and delivered nothing but hunger and misery.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He spent months in Germany waiting for a reward that never came, until the 20th of December 1918, when he ran away and turned him in to the Army on the 11th of January 1919. The Germans, he says, without question.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="69" name="9843 - 5c" tags="TEXT" position="2500,2000" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner reminds you he was never convicted for treason, and is insulted by your suggestion. He voluntarily fought for his country, and for you. He tells you traitors should receive the death penalty.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;At this moment, no traitors have been executed after the War.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="70" name="9843 - 5d" tags="TEXT" position="2500,2100" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;He tells you that he quickly realised he had been misled. He was allowed four days with his parents in Dessel, the one promise that had been kept.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Because he did not want to commit himself to the Flemish cause after his desertion, he had to go to Germany, where the rewards that had been promised turned out to be nothing but hunger and misery. He remained there until the 20th of December 1918.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;On the 11th of January 1919 he gave himself up to the Army. He was arrested on the 18th of March, and on the 2nd of August 1919 he was sentenced to twenty years of detention, stripped of all compensation and denied the right to vote.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="71" name="9843 - 5e" tags="TEXT" position="2500,2300" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;Being able to spend four days at home, both his parents were very relieved to see him. They advised him against not supporting the Flemish activists. When he nonetheless refused to commit himself to the cause, he was cast out and insulted by those who had brought him there.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;His parents were right. He went to Germany for his reward for deserting, but all he received was hunger and misery. He has not seen his parents as a free man since.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="72" name="9843 - Intro" tags="TEXT" position="500,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - 1&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;title-screen&quot;&gt;
+  &lt;div class=&quot;title-content&quot;&gt;
+    &lt;p&gt;PRISONER 9843&lt;/p&gt;
+    &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+    &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+    &lt;p&gt;NAME: &lt;span class=&quot;highlight&quot;&gt;Van Campfort, François&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;BORN: &lt;span class=&quot;highlight&quot;&gt;1892-07-14 (aged 27)&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;UNIT: &lt;span class=&quot;highlight&quot;&gt;2nd Engineer Battallion&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;CAUSE OF DETENTION: &lt;span class=&quot;highlight&quot;&gt;desertion to the enemy&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;DATE OF OFFENSE: &lt;span class=&quot;highlight&quot;&gt;1918-05-07&lt;/span&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="73" name="9843 - Outro" tags="TEXT" position="2700,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - Quote&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You close your notes and rise from your chair. Van Campfort watches you, as measured as when you arrived. You thank him for his time, and, again, he nods once.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="74" name="9843 - Quote" tags="" position="2900,1700" size="100,100">&lt;&lt;set $nextPassage = &quot;Init&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p style=&quot;color: white;&quot;&gt;&quot;Den bestuurder heeft mij uit zijn dienst ontslagen aangezien ik niet plichtig was in de vlucht van den aangehoudene, maar om reden dat ik hem gekwaad had door mijne onbeleefde woorde. Nu, dit ongeval wilde ik op de Duitscher wreken, die mij dit op mijn hals geduwd hadden door hunnen laffen en wreeden oorlog.&quot;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to start the next interview...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="75" name="Disclaimer" tags="" position="500,100" size="100,100">&lt;&lt;set $nextPassage = &quot;Intro - 1&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The following testimonies are inspired by the true stories of prisoners held at the Central Penitentiary of Leuven after the First World War.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;They shared a conviction for desertion to the enemy, yet behind each verdict lay an entirely different story and person.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;Each narrative is based on a real handwritten autobiography preserved in their prison files.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
@@ -887,26 +1304,26 @@ $(document).on('keydown', function(e) {
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
   Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="32" name="Init" tags="" position="100,100" size="100,100">&lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;</tw-passagedata><tw-passagedata pid="33" name="Intermezzo - 1" tags="INTERMEZZO" position="500,1100" size="100,100">&lt;&lt;set $nextPassage = &quot;Init&quot;&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="76" name="Init" tags="" position="100,100" size="100,100">&lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;</tw-passagedata><tw-passagedata pid="77" name="Intermezzo - 1" tags="INTERMEZZO" position="500,1500" size="100,100">&lt;&lt;set $nextPassage = &quot;9843 - Intro&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {}&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
 &lt;div class=&quot;passage-body&quot;&gt;
-  &lt;p&gt;You decide it is time for a break. You unfold your newspaper, &lt;span class=&quot;highlight&quot;&gt;La Nation Belge&lt;/span&gt;, and read:&lt;/p&gt;
+  &lt;p&gt;It is noon, and you decide it is time for a break. You unfold your newspaper, &lt;span class=&quot;highlight&quot;&gt;La Nation Belge&lt;/span&gt;, and read:&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p class=&quot;highlight&quot;&gt;BORMS AUX ASSISES - Où il est enfin question de Judas!&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;The trial of &lt;span class=&quot;highlight&quot;&gt;August Borms&lt;/span&gt;, Flemish activist and accused collaborator, is well underway. The public prosecutor has called upon the jury to condemn those who aided the enemy, describing their actions as nothing short of treason.&lt;/p&gt;
+  &lt;p&gt;The trial of August Borms, Flemish activist and accused collaborator, is well underway. The public prosecutor has called upon the jury to condemn those who aided the enemy, describing their actions as nothing short of treason.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;In the courtroom, witnesses take the stand one after another. What strikes you is one of the questions asked: whether the mistreatment of Flemish soldiers by their officers could ever justify desertion to the enemy.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;You fold the newspaper back, and prepare yourself for your next interview of the day.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
-  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to start the next interview...
 &lt;/div&gt;
 
-&lt;!--https://uurl.kbr.be/1518102--&gt;</tw-passagedata><tw-passagedata pid="34" name="Intro - 1" tags="" position="700,100" size="100,100">&lt;&lt;set $nextPassage = &quot;Intro - 2&quot;&gt;&gt;
+&lt;!--https://uurl.kbr.be/1518102--&gt;</tw-passagedata><tw-passagedata pid="78" name="Intro - 1" tags="" position="700,100" size="100,100">&lt;&lt;set $nextPassage = &quot;Intro - 2&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {}&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
@@ -915,20 +1332,20 @@ $(document).on('keydown', function(e) {
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;The War ended ten months ago.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;You are &lt;span class=&quot;highlight&quot;&gt;Mr. Ernest Bertrand&lt;/span&gt;, director of the Central Penitentiary of Leuven since 1912. Your duties include:&lt;/p&gt;
+  &lt;p&gt;You are Mr. Ernest Bertrand, director of the Central Penitentiary of Leuven since 1912. Your duties include:&lt;/p&gt;
   &lt;div class=&quot;choices&quot;&gt;
     &lt;p&gt;- Supervision of daily activities&lt;/p&gt;
     &lt;p&gt;- Execution of institutional policies and legal directives&lt;/p&gt;
     &lt;p&gt;- Provision of moral guidance to detainees&lt;/p&gt;
   &lt;/div&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
-  &lt;p&gt;Since appointment, &lt;span class=&quot;highlight&quot;&gt;life history interviews&lt;/span&gt; have formed an important part of your moral assessment and guidance procedure.&lt;/p&gt;
+  &lt;p&gt;Since appointment, life history interviews have formed an important part of your moral assessment and guidance procedure.&lt;/p&gt;
   &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
   &lt;p&gt;Today, the first detainees convicted of &lt;span class=&quot;highlight&quot;&gt;desertion to the enemy&lt;/span&gt; are scheduled to arrive...&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
   Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="35" name="Intro - 2" tags="" position="900,100" size="100,100">&lt;&lt;set $nextPassage = &quot;9754 - Intro&quot;&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="79" name="Intro - 2" tags="" position="900,100" size="100,100">&lt;&lt;set $nextPassage = &quot;9754 - Intro&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {}&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
@@ -944,8 +1361,8 @@ $(document).on('keydown', function(e) {
   &lt;p&gt;The new prisoners have been appointed a cell and are now settled in. It is time for your first interview of the day.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;bottom-bar&quot;&gt;
-  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="36" name="Title Screen" tags="" position="300,100" size="100,100">&lt;&lt;set $nextPassage = &quot;Disclaimer&quot;&gt;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to start your first interview...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="80" name="Title Screen" tags="" position="300,100" size="100,100">&lt;&lt;set $nextPassage = &quot;Disclaimer&quot;&gt;&gt;
 &lt;&lt;set $choiceMap = {}&gt;&gt;
 &lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
 
@@ -961,6 +1378,429 @@ $(document).on('keydown', function(e) {
   &lt;div class=&quot;bottom-bar&quot;&gt;
     Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to start
   &lt;/div&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="81" name="9925 - Intro" tags="TEXT" position="500,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 1&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;title-screen&quot;&gt;
+  &lt;div class=&quot;title-content&quot;&gt;
+    &lt;p&gt;PRISONER 9843&lt;/p&gt;
+    &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+    &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+    &lt;p&gt;NAME: &lt;span class=&quot;highlight&quot;&gt;Buyens, Alphonse&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;BORN: &lt;span class=&quot;highlight&quot;&gt;1895-07-06 (aged 24)&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;UNIT: &lt;span class=&quot;highlight&quot;&gt;9th Regiment of the Line&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;CAUSE OF DETENTION: &lt;span class=&quot;highlight&quot;&gt;desertion to the enemy&lt;/span&gt;&lt;/p&gt;
+    &lt;p&gt;DATE OF OFFENSE: &lt;span class=&quot;highlight&quot;&gt;1918-04-20&lt;/span&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="82" name="9925 - 1" tags="CHOICE" position="700,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9925 - 1a&quot;,
+  &quot;2&quot;: &quot;9925 - 1b&quot;,
+  &quot;3&quot;: &quot;9925 - 1c&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;You enter Cell &lt;span class=&quot;highlight&quot;&gt;528&lt;/span&gt; to find the prisoner already on his feet. He does not wait for you to speak. Whatever you have heard, he says, is wrong.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You feel tired and decide to sit down. He does not.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You prepare to ask your first question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - How would you describe your childhood?&lt;/p&gt;
+    &lt;p&gt;2 - What was your occupation prior to the War?&lt;/p&gt;
+    &lt;p&gt;3 - I am told you are not easy to deal with.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="83" name="9925 - 1a" tags="TEXT" position="900,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 2I&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner pauses briefly, as if he did not expect his childhood to be of interest. He tells you he was born in Lichtaart, and remembers little of his first seven years. He only knows he got lost at the age of three, which he mentions with a smile.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;At seven he started school in Poederlee under a teacher named Louis Bels, and stayed until he was twelve. He was a good student, and won several prizes.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;At twelve, the family moved to Antwerp, and that, he says, was the end of his childhood.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="84" name="9925 - 1b" tags="TEXT" position="900,2800" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 2I&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you he started working at fourteen for a zinc worker in Antwerp, where the family had moved when he was twelve.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He stayed in the trade until he was seventeen, when an accident nearly cost him his life, and he decided not to push his luck. After that he moved to an oil factory, where he remained until the War broke out.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He says it all briskly, as if his life before the War is of little importance.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="85" name="9925 - 1c" tags="TEXT" position="900,3400" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 2II&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner frowns. He tells you was an outstanding student, a good worker, and a great soldier.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Whatever you have been told, he says, was told to you by someone with an interest in keeping him here.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="86" name="9925 - 2I" tags="CHOICE" position="1100,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9925 - 2a&quot;,
+  &quot;2&quot;: &quot;9925 - 2b&quot;,
+  &quot;3&quot;: &quot;9925 - 2c&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner continues by recounting the first days of the War. He lost his job at the oil factory, and on the 8th of August, he volunteered to be a soldier.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;It is obvious he remembers these days clearly.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You ask your next question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - What was your first impression of the Army?&lt;/p&gt;
+    &lt;p&gt;2 - Were you ever punished during your service?&lt;/p&gt;
+    &lt;p&gt;3 - How did you end up at the Yser?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="87" name="9925 - 2II" tags="CHOICE" position="1100,3400" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9925 - 2e&quot;,
+  &quot;2&quot;: &quot;9925 - 2b&quot;,
+  &quot;3&quot;: &quot;9925 - 2f&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner seems agitated by your last question.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You decide to tread carefully.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You choose your next question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - How did you end up in the Army?&lt;/p&gt;
+    &lt;p&gt;2 - Were you ever punished during your service?&lt;/p&gt;
+    &lt;p&gt;3 - What did the first days of the War look like?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="88" name="9925 - 2a" tags="TEXT" position="1300,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you that when he arrived at the depot in Hemixem, they stayed three days before being sent to Ghent. They did not let the War weigh on them, as there was plenty of making merry along the way.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;The mood changed quickly enough. On the 16th of August, they were sent to stand guard at the station in Kortrijk with barely any ammunition between them. When locals came to warn them that German Uhlans were approaching, they fled to Menen.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;That same evening, five Uhlans appeared there too. The sergeant killed one and wounded another. That, he says, was his first impression of the Army.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="89" name="9925 - 2c" tags="TEXT" position="1300,2800" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner explains the first weeks of the War in great detail. Hemiksem, Gent, Menen, Kortrijk, Rijsel, eighteen hours on foot without water, an hour of sleep on a handful of straw, a train to Le Havre, a boat to Oostende, Eeklo, and Bellem.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You do your best to follow. What stays with you is not the geography, but the  pace of it all, and the sense that nobody ever told these men where they were going or why.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;At the end of it all, the Yser, and it&#39;s famous battle.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="90" name="9925 - 2b" tags="TEXT" position="1300,3200" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 3I&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner stands up. He admits he was punished, but the reason, he insists, was not fair.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;In January 1916, a bombardment left him wounded in the leg. When he refused to march on it, he was sentenced to fourteen days of detention.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;So yes, he supposes he was punished... for having a leg that had been blown apart and for having the audacity to say so. Otherwise, he was always the first to volunteer for dangerous missions, and did everything that was asked of him.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="91" name="9925 - 2e" tags="TEXT" position="1300,3400" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;When the war broke out, the oil factory where he worked shut its doors and he found himself without work. On the 8th of August 1914, he enlisted as a war volunteer.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;What followed were weeks of marching, retreating, sailing and sleeping on straw, until he found himself at the Yser, where the famous battle took place.&lt;/p&gt;
+ &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He tells it all with pride. Nobody asked him to do this, and he always kept his spirits up.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="92" name="9925 - 2f" tags="TEXT" position="1300,3500" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 3&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you they left Hemixem after three days, sent to Gent in good spirits, then to Menen, then to guard the station in Kortrijk with barely any ammunition between them.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When locals warned them that German Uhlans were coming, they ran back to Menen. That same evening five Uhlans appeared there too. The sergeant killed one and wounded another.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;The next morning at four they marched to Rijsel on foot, no water allowed, arriving at midnight. Then Le Havre, then by boat to Ostend, then Eeklo, then Bellem to guard the railway, and finally the order to advance to the Yser.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="93" name="9925 - 3" tags="CHOICE" position="1500,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9925 - 3a&quot;,
+  &quot;2&quot;: &quot;9925 - 3b&quot;,
+  &quot;3&quot;: &quot;9925 - 3c&quot;,
+  &quot;4&quot;: &quot;9925 - 3d&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;As the prisoner continues telling his story, you notice some wounds on his leg.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Maybe this explains why he still has not sat down since you entered his cell.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You ask your next question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - Were you ever wounded during the War?&lt;/p&gt;
+    &lt;p&gt;2 - What was life like in the trenches?&lt;/p&gt;
+    &lt;p&gt;3 - What is your opinion of the Germans?&lt;/p&gt;
+    &lt;p&gt;4 - How did you keep your spirits up at the Yser?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="94" name="9925 - 3I" tags="CHOICE" position="1500,3200" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9925 - 3e&quot;,
+  &quot;2&quot;: &quot;9925 - 3b&quot;,
+  &quot;3&quot;: &quot;9925 - 3c&quot;,
+  &quot;4&quot;: &quot;9925 - 3d&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;You indeed notice the wound on his leg, which looks painful.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Maybe that is why he still has not sat down.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You ask your next question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - Were you afraid of dying during the War?&lt;/p&gt;
+    &lt;p&gt;2 - What was life like in the trenches?&lt;/p&gt;
+    &lt;p&gt;3 - What is your opinion of the Germans?&lt;/p&gt;
+    &lt;p&gt;4 - How did you keep your spirits up at the Yser?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="95" name="9925 - 3a" tags="TEXT" position="1700,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;In January 1916 a bombardment left the prisoner with a wounded leg. He was sent to hospital for three months. When he returned, he refused to march on it and was given fourteen days in prison.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;It was not his only time in hospital. After the battle of the Yser he fell ill and was sent to the depot in Zutkerque near Calais. Earlier that same year he had gone back again with an illness brought on by going into the trenches in his socks for three months, because he had no boots to wear.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He falls silent for a moment, then says quietly: that is how a soldier gets treated.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="96" name="9925 - 3b" tags="TEXT" position="1700,2800" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner tells you that he did not always remain posted in the trenches. In January 1915 he was sitting with a companion on a listening post when the Germans began shelling them with heavy artillery for three hours straight, causing pieces of roof tiles to rain down on their heads. There was a lieutenant there to observe, he adds, who wept like a child.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;From 1916 onwards it was what he calls &#39;grote kermis&#39;. The sector at Merkem was the worst. They never had a moment&#39;s rest there. And then there was the poison gas. Many men lost to it, but he was lucky.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;It is clear the prisoner takes great pride in his service, saying that he was always the first to volunteer for reconnaissance missions.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="97" name="9925 - 3c" tags="TEXT" position="1700,2900" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner says he knows what you are getting at, but makes it clear he has no sympathies for the Germans, almost angrily. They shelled him, shot him, gassed him, and beat him. He fought them for 42 months.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;What is there to say, he asks. They are barbarians.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="98" name="9925 - 3d" tags="TEXT" position="1700,3000" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner thinks about this for a moment. It was easier at the start of the War. He tells you that when they asked for volunteers to go on night reconnaissance missions, he put his hand up every time.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He also mentions his companions, but does not romanticize it. Many of them died.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;There were stretches, particularly at Merkem, where keeping the spirits up was simply not an option. You endured, he says, and he did so for 42 months. He was a great soldier.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="99" name="9925 - 3e" tags="TEXT" position="1700,3200" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - 4&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner is quiet for a moment. He got used to being shelled, sometimes even by his own artillery, walked the trenches in his socks for three months, sat in poison gas more times than he could count, and volunteered for night reconnaissance missions every single time they were offered.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Of course he was afraid of dying, but so was everyone. He did, however, face death bravely, and he knows he is lucky to be alive. Many other good soldiers were not.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="100" name="9925 - 4" tags="CHOICE" position="1900,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;&quot;&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {
+  &quot;1&quot;: &quot;9925 - 4a&quot;,
+  &quot;2&quot;: &quot;9925 - 4b&quot;,
+  &quot;3&quot;: &quot;9925 - 4c&quot;,
+}&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;Without waiting for your next question, the prisoner continues by telling how he ended up here. On the 20th of April 1918, three days after a major attack in which so many Germans died that they could not take a step without treading on them, some men went out. He cannot say whether they went to look for souvenirs or to bury the dead. &lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;When he heard a scream, he asked a companion to come with him to investigate. That is when twenty Germans overwhelmed them.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;You have time for one more question:&lt;/p&gt;
+  &lt;div class=&quot;choices&quot;&gt;
+    &lt;p&gt;1 - Do you consider yourself Flemish or Belgian?&lt;/p&gt;
+    &lt;p&gt;2 - You deny to have deserted to the Enemy?&lt;/p&gt;
+    &lt;p&gt;3 - What happened after the 20th of April?&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press the number of your choice and press the &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt;: &lt;span class=&quot;choice-display&quot;&gt;_&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="101" name="9925 - 4a" tags="TEXT" position="2100,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;He stiffens. Belgian, he says, without hesitation. They fought like Lions, he and his companions. The proof hangs on the regiment&#39;s flag.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He volunteered when others did not, fought for forty-two months, burned his own foot with boiling water rather than work for the Germans after his capture, and ended up here for going to help a wounded man.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He looks at you with barely contained anger. Is that not Belgian enough, he asks. You close your notes.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="102" name="9925 - 4b" tags="TEXT" position="2100,2800" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner insists he went to help a wounded man. That is all he did. He heard a scream, asked his companion to come with him, and walked into twenty Germans waiting at the other side.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;After his capture he was taken to work in Germany, but he burned his foot with boiling water to avoid working for those barbarians. Is that something a traitor would do, he asks you.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="103" name="9925 - 4c" tags="TEXT" position="2100,2900" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - Outro&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p&gt;The prisoner recounts how he was taken to Germany and put to work in the coal mines, where he was beaten regularly. Eventually he boiled water and burned his own foot to avoid working for them any longer.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He spent the rest of the War in a hospital in Münster. When the armistice was signed, he returned home unable to walk. On the 27th of January 1919, they came to arrest him.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;He says it all without pause. He adds that he had fought for forty-two months for his country, and that this is what it cost him.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="104" name="9925 - Outro" tags="TEXT" position="2300,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;9925 - Quote&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;As you leave Cell &lt;span class=&quot;highlight&quot;&gt;528&lt;/span&gt;, Mr. Buyens is already talking again. Forty-two months defending this country against barbarians. He would sooner have died a thousand times than give himself up to the Enemy voluntarily.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt; You pull the door closed behind you.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="105" name="Outro - 1" tags="" position="500,3700" size="100,100">&lt;&lt;set $nextPassage = &quot;Outro - 2&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+&lt;p&gt;You return to your office to review the interviews of today. Four men, four different versions of the same verdict.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;They were sons, brothers, and soldiers long before they were deserters. And now they are prisoners... deceived, exhausted, wounded, and forgotten. &lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;It is not your task to evaluate whether they deserved their punishment. But you have been sitting in these cells long enough to know that &lt;span class=&quot;highlight&quot;&gt;desertion to the enemy&lt;/span&gt; covers a great many different kinds of men.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Soon, others will arrive. About a hundred of them.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="106" name="9925 - Quote" tags="" position="2500,2700" size="100,100">&lt;&lt;set $nextPassage = &quot;Outro - 1&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p style=&quot;color: white;&quot;&gt;&quot;Moest ik het gedaan hebben met eene opgezetten wil dan zou ik zeggen, ik verdien niet meer dan hier zoo te lijden, maar neen dan hat ik duizendmaal liever te sterven dan mij vrijwillig over te geven aan den vijand. En zeggen dat wij 42 volle maanden den vaderlandschen grond bestreden hebben tegen die barbaren, dat wij ons leven in de schaal wierpen voor hun waarvan wij nu zoveel martelingen te verduren hebben, dat is dus uw loon armen Soldaat!&quot;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to continue...
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="107" name="Outro - 2" tags="" position="700,3700" size="100,100">&lt;&lt;set $nextPassage = &quot;Init&quot;&gt;&gt;
+&lt;&lt;set $choiceMap = {}&gt;&gt;
+&lt;&lt;set $currentChoice = &quot;&quot;&gt;&gt;
+
+&lt;div class=&quot;passage-body&quot;&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;Thank you for engaging with these testimonies.&lt;/p&gt;
+  &lt;p class=&quot;spacer&quot;&gt;&lt;/p&gt;
+  &lt;p&gt;The original handwritten autobiographies remain preserved in the prison archives. This project is merely an attempt to bring them to life, and can in no way replace them.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;bottom-bar&quot;&gt;
+  Press &lt;span class=&quot;highlight&quot;&gt;Enter Key (↵)&lt;/span&gt; to restart...
 &lt;/div&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
 	/*! SugarCube JS */
